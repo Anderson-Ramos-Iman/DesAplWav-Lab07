@@ -1,0 +1,161 @@
+<%- include('partials/header', { title: 'Dashboard Admin' }) %>
+
+<div class="row" style="margin-top: 20px;">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center-align"><i class="material-icons medium blue-text">admin_panel_settings</i></span>
+                <h4 class="center-align">Dashboard de Administrador</h4>
+                <div id="admin-dash-loading" class="center-align">
+                    <div class="preloader-wrapper active">
+                        <div class="spinner-layer spinner-blue-only">
+                            <div class="circle-clipper left"><div class="circle"></div></div>
+                            <div class="gap-patch"><div class="circle"></div></div>
+                            <div class="circle-clipper right"><div class="circle"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="admin-dash-content" style="display:none;">
+                    <table class="striped highlight responsive-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Apellido</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Fecha de Registro</th>
+                                <th>Roles</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver info de usuario -->
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <h4><i class="material-icons blue-text">person</i> Información del Usuario</h4>
+        <div class="divider" style="margin-bottom: 15px;"></div>
+        <div class="row">
+            <div class="col s12 m6">
+                <p><strong>Nombre:</strong> <span id="modal-name"></span></p>
+                <p><strong>Apellido:</strong> <span id="modal-lastName"></span></p>
+                <p><strong>Email:</strong> <span id="modal-email"></span></p>
+                <p><strong>Teléfono:</strong> <span id="modal-phone"></span></p>
+            </div>
+            <div class="col s12 m6">
+                <p><strong>Fecha de Nacimiento:</strong> <span id="modal-birthdate"></span></p>
+                <p><strong>Edad:</strong> <span id="modal-edad"></span></p>
+                <p><strong>Dirección:</strong> <span id="modal-adress"></span></p>
+                <p><strong>Roles:</strong> <span id="modal-roles"></span></p>
+                <p><strong>Fecha de Registro:</strong> <span id="modal-createdAt"></span></p>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-blue btn-flat">Cerrar</a>
+    </div>
+</div>
+
+<script>
+(async () => {
+    const token = sessionStorage.getItem('token');
+    if (!token) return window.location.href = '/signIn';
+
+    try {
+        checkTokenExpiry(token);
+    } catch(e) {
+        sessionStorage.removeItem('token');
+        return window.location.href = '/signIn';
+    }
+
+    // Verificar rol admin
+    const payload = decodeToken(token);
+    const roles = payload.roles || [];
+    if (!roles.includes('admin')) {
+        return window.location.href = '/403';
+    }
+
+    try {
+        const res = await fetch('/api/users', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('token');
+            return window.location.href = '/signIn';
+        }
+        if (res.status === 403) {
+            return window.location.href = '/403';
+        }
+        const users = await res.json();
+
+        const tbody = document.getElementById('users-table-body');
+        users.forEach(u => {
+            const roleNames = (u.roles || []).map(r => r.name || r).join(', ');
+            const createdAt = u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-PE') : '';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${u.name || ''}</td>
+                <td>${u.lastName || ''}</td>
+                <td>${u.email || ''}</td>
+                <td>${u.phoneNumer || ''}</td>
+                <td>${createdAt}</td>
+                <td>${roleNames}</td>
+                <td>
+                    <button class="btn-small waves-effect waves-light blue darken-2 btn-ver-usuario"
+                        data-user='${JSON.stringify(u).replace(/'/g, "&#39;")}'>
+                        <i class="material-icons">visibility</i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Inicializar modal
+        M.Modal.init(document.querySelectorAll('.modal'));
+
+        // Eventos de botones
+        document.querySelectorAll('.btn-ver-usuario').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const user = JSON.parse(btn.getAttribute('data-user'));
+                document.getElementById('modal-name').textContent = user.name || '';
+                document.getElementById('modal-lastName').textContent = user.lastName || '';
+                document.getElementById('modal-email').textContent = user.email || '';
+                document.getElementById('modal-phone').textContent = user.phoneNumer || '';
+                document.getElementById('modal-adress').textContent = user.adress || '';
+                const roleNames = (user.roles || []).map(r => r.name || r).join(', ');
+                document.getElementById('modal-roles').textContent = roleNames;
+                document.getElementById('modal-createdAt').textContent = user.createdAt ? new Date(user.createdAt).toLocaleString('es-PE') : '';
+
+                if (user.birthdate) {
+                    const bd = new Date(user.birthdate);
+                    document.getElementById('modal-birthdate').textContent = bd.toLocaleDateString('es-PE');
+                    const today = new Date();
+                    let age = today.getFullYear() - bd.getFullYear();
+                    const m = today.getMonth() - bd.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+                    document.getElementById('modal-edad').textContent = age + ' años';
+                } else {
+                    document.getElementById('modal-birthdate').textContent = '';
+                    document.getElementById('modal-edad').textContent = '';
+                }
+
+                M.Modal.getInstance(document.getElementById('userModal')).open();
+            });
+        });
+
+        document.getElementById('admin-dash-loading').style.display = 'none';
+        document.getElementById('admin-dash-content').style.display = 'block';
+    } catch (err) {
+        document.getElementById('admin-dash-loading').innerHTML = '<p class="red-text">' + err.message + '</p>';
+    }
+})();
+</script>
+
+<%- include('partials/footer') %>

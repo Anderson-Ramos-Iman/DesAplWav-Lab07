@@ -5,7 +5,15 @@ import roleRepository from '../repositories/RoleRepository.js';
 
 class AuthService {
 
-    async signUp({ email, password, name, roles = ['user'] }) {
+    async signUp({ email, password, name, lastName, phoneNumer, birthdate, roles = ['user'] }) {
+        // Validar password: min 8 caracteres, min 1 mayúscula, min 1 dígito, min 1 caracter especial
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[#$%&*@]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            const err = new Error('La contraseña debe tener mínimo 8 caracteres, 1 mayúscula, 1 dígito y 1 carácter especial (#$%&*@)');
+            err.status = 400;
+            throw err;
+        }
+
         const existing = await userRepository.findByEmail(email);
         if (existing) {
             const err = new Error('El email ya se encuentra en uso');
@@ -25,12 +33,15 @@ class AuthService {
             roleDocs.push(roleDoc._id);
         }
 
-        const user = await userRepository.create({ email, password: hashed, name, roles: roleDocs });
+        const user = await userRepository.create({ 
+            email, password: hashed, name, lastName, phoneNumer, birthdate, roles: roleDocs 
+        });
 
         return {
                 id: user._id,
                 email: user.email,
-                name: user.name
+                name: user.name,
+                lastName: user.lastName
             };
     }
 

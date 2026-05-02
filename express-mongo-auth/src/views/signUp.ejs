@@ -1,0 +1,103 @@
+<%- include('partials/header', { title: 'Registrarse' }) %>
+
+<div class="row" style="margin-top: 20px;">
+    <div class="col s12 m8 offset-m2">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center-align"><i class="material-icons medium blue-text">person_add</i></span>
+                <h4 class="center-align">Registrarse</h4>
+                <div id="signUp-error" class="red-text center-align" style="display:none; margin-bottom:10px;"></div>
+                <div id="signUp-success" class="green-text center-align" style="display:none; margin-bottom:10px;"></div>
+                <form id="signUpForm">
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">person</i>
+                            <input type="text" id="name" name="name" required>
+                            <label for="name">Nombre</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">person_outline</i>
+                            <input type="text" id="lastName" name="lastName" required>
+                            <label for="lastName">Apellido</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">phone</i>
+                            <input type="text" id="phoneNumer" name="phoneNumer" pattern="\d{9}" maxlength="9" minlength="9" oninput="this.value=this.value.replace(/\D/g,'').slice(0,9);" required>
+                            <label for="phoneNumer">Teléfono (9 dígitos)</label>
+                            <span class="helper-text" data-error="Debe tener exactamente 9 dígitos numéricos">Ingrese 9 dígitos</span>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">cake</i>
+                            <input type="date" id="birthdate" name="birthdate" required>
+                            <label for="birthdate" class="active">Fecha de Nacimiento</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <i class="material-icons prefix">email</i>
+                            <input type="email" id="email" name="email" required>
+                            <label for="email">Email</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <i class="material-icons prefix">vpn_key</i>
+                            <input type="password" id="password" name="password" required>
+                            <label for="password">Password</label>
+                            <i class="material-icons suffix toggle-password" data-target="password" style="cursor:pointer; position:absolute; right:0; top:0.5rem;">visibility_off</i>
+                            <span class="helper-text">Mínimo 8 caracteres, 1 mayúscula, 1 dígito, 1 carácter especial (#$%&*@)</span>
+                        </div>
+                    </div>
+                    <div class="center-align">
+                        <button class="btn waves-effect waves-light blue darken-2" type="submit">
+                            Registrarse <i class="material-icons right">person_add</i>
+                        </button>
+                    </div>
+                </form>
+                <div class="center-align" style="margin-top: 15px;">
+                    <p>¿Ya tienes cuenta? <a href="/signIn">Inicia sesión aquí</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('signUpForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('signUp-error');
+    const successDiv = document.getElementById('signUp-success');
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    const body = {
+        name: document.getElementById('name').value,
+        lastName: document.getElementById('lastName').value,
+        phoneNumer: document.getElementById('phoneNumer').value,
+        birthdate: document.getElementById('birthdate').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+    };
+
+    try {
+        const res = await fetch('/api/auth/signUp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error al registrarse');
+
+        successDiv.textContent = 'Registro exitoso. Redirigiendo a inicio de sesión...';
+        successDiv.style.display = 'block';
+        setTimeout(() => { window.location.href = '/signIn'; }, 2000);
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
+});
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,101 @@
+<%- include('partials/header', { title: 'Dashboard Usuario' }) %>
+
+<div class="row" style="margin-top: 30px;">
+    <div class="col s12 m8 offset-m2">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center-align"><i class="material-icons medium blue-text">dashboard</i></span>
+                <h4 class="center-align">Dashboard de Usuario</h4>
+                <div id="user-dash-loading" class="center-align">
+                    <div class="preloader-wrapper active">
+                        <div class="spinner-layer spinner-blue-only">
+                            <div class="circle-clipper left"><div class="circle"></div></div>
+                            <div class="gap-patch"><div class="circle"></div></div>
+                            <div class="circle-clipper right"><div class="circle"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="user-dash-content" style="display:none;">
+                    <h5 class="center-align" id="welcome-msg"></h5>
+                    <div class="divider" style="margin: 20px 0;"></div>
+                    <div class="row">
+                        <div class="col s12 m6">
+                            <div class="card-panel blue lighten-5">
+                                <p><strong>Email:</strong> <span id="dash-email"></span></p>
+                                <p><strong>Nombre:</strong> <span id="dash-name"></span></p>
+                                <p><strong>Apellido:</strong> <span id="dash-lastName"></span></p>
+                            </div>
+                        </div>
+                        <div class="col s12 m6">
+                            <div class="card-panel blue lighten-5">
+                                <p><strong>Teléfono:</strong> <span id="dash-phone"></span></p>
+                                <p><strong>Fecha de Nacimiento:</strong> <span id="dash-birthdate"></span></p>
+                                <p><strong>Edad:</strong> <span id="dash-edad"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="center-align">
+                        <a href="/profile" class="btn waves-effect waves-light blue darken-2">
+                            Editar Perfil <i class="material-icons right">edit</i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(async () => {
+    const token = sessionStorage.getItem('token');
+    if (!token) return window.location.href = '/signIn';
+
+    try {
+        checkTokenExpiry(token);
+    } catch(e) {
+        sessionStorage.removeItem('token');
+        return window.location.href = '/signIn';
+    }
+
+    // Verificar rol
+    const payload = decodeToken(token);
+    const roles = payload.roles || [];
+    if (!roles.includes('user') && !roles.includes('admin')) {
+        return window.location.href = '/403';
+    }
+
+    try {
+        const res = await fetch('/api/users/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('token');
+            return window.location.href = '/signIn';
+        }
+        const user = await res.json();
+
+        document.getElementById('welcome-msg').textContent = 'Bienvenido, aquí están tus datos';
+        document.getElementById('dash-email').textContent = user.email || '';
+        document.getElementById('dash-name').textContent = user.name || '';
+        document.getElementById('dash-lastName').textContent = user.lastName || '';
+        document.getElementById('dash-phone').textContent = user.phoneNumer || '';
+
+        if (user.birthdate) {
+            const bd = new Date(user.birthdate);
+            document.getElementById('dash-birthdate').textContent = bd.toLocaleDateString('es-PE');
+            const today = new Date();
+            let age = today.getFullYear() - bd.getFullYear();
+            const m = today.getMonth() - bd.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+            document.getElementById('dash-edad').textContent = age + ' años';
+        }
+
+        document.getElementById('user-dash-loading').style.display = 'none';
+        document.getElementById('user-dash-content').style.display = 'block';
+    } catch (err) {
+        document.getElementById('user-dash-loading').innerHTML = '<p class="red-text">' + err.message + '</p>';
+    }
+})();
+</script>
+
+<%- include('partials/footer') %>

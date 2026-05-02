@@ -1,0 +1,71 @@
+<%- include('partials/header', { title: 'Iniciar Sesión' }) %>
+
+<div class="row" style="margin-top: 40px;">
+    <div class="col s12 m6 offset-m3">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center-align"><i class="material-icons medium blue-text">lock</i></span>
+                <h4 class="center-align">Iniciar Sesión</h4>
+                <div id="signIn-error" class="red-text center-align" style="display:none; margin-bottom:10px;"></div>
+                <form id="signInForm">
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input type="email" id="email" name="email" required>
+                        <label for="email">Email</label>
+                    </div>
+                    <div class="input-field">
+                        <i class="material-icons prefix">vpn_key</i>
+                        <input type="password" id="password" name="password" required>
+                        <label for="password">Password</label>
+                        <i class="material-icons suffix toggle-password" data-target="password" style="cursor:pointer; position:absolute; right:0; top:0.5rem;">visibility_off</i>
+                    </div>
+                    <div class="center-align">
+                        <button class="btn waves-effect waves-light blue darken-2" type="submit">
+                            Ingresar <i class="material-icons right">send</i>
+                        </button>
+                    </div>
+                </form>
+                <div class="center-align" style="margin-top: 15px;">
+                    <p>¿No tienes cuenta? <a href="/signUp">Regístrate aquí</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('signInForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('signIn-error');
+    errorDiv.style.display = 'none';
+
+    try {
+        const res = await fetch('/api/auth/signIn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error al iniciar sesión');
+
+        sessionStorage.setItem('token', data.token);
+
+        // Decodificar token para obtener roles
+        const payload = decodeToken(data.token);
+        const roles = payload.roles || [];
+
+        if (roles.includes('admin')) {
+            window.location.href = '/dashboard/admin';
+        } else {
+            window.location.href = '/dashboard/user';
+        }
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
+});
+</script>
+
+<%- include('partials/footer') %>

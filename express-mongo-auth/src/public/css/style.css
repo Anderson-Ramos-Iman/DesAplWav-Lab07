@@ -1,0 +1,49 @@
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1 0 auto;
+    padding-bottom: 30px;
+}
+
+nav .brand-logo {
+    font-weight: bold;
+}
+
+.card {
+    border-radius: 8px;
+}
+
+.card-title i.medium {
+    display: block;
+    margin: 0 auto 10px;
+}
+
+.input-field .prefix {
+    top: 0.5rem;
+}
+
+.input-field {
+    position: relative;
+}
+
+.input-field .toggle-password {
+    color: #9e9e9e;
+    transition: color 0.2s;
+}
+
+.input-field .toggle-password:hover {
+    color: #1565c0;
+}
+
+table {
+    font-size: 14px;
+}
+
+.modal {
+    max-width: 600px;
+    border-radius: 8px;
+}

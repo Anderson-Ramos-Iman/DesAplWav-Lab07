@@ -18,6 +18,24 @@ const UserSchema = new mongoose.Schema({
     }],
     name: { 
         type: String
+    },
+    lastName: {
+        type: String,
+        required: true
+    },
+    phoneNumer: {
+        type: String,
+        required: true
+    },
+    birthdate: {
+        type: Date,
+        required: true
+    },
+    url_profile: {
+        type: String
+    },
+    adress: {
+        type: String
     }
 }, { timestamps: true });
 

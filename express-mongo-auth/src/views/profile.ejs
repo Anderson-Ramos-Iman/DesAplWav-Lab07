@@ -1,0 +1,191 @@
+<%- include('partials/header', { title: 'Mi Cuenta' }) %>
+
+<div class="row" style="margin-top: 20px;">
+    <div class="col s12 m8 offset-m2">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center-align"><i class="material-icons medium blue-text">account_circle</i></span>
+                <h4 class="center-align">Mi Cuenta</h4>
+                <div id="profile-error" class="red-text center-align" style="display:none; margin-bottom:10px;"></div>
+                <div id="profile-success" class="green-text center-align" style="display:none; margin-bottom:10px;"></div>
+                <div id="profile-loading" class="center-align">
+                    <div class="preloader-wrapper active">
+                        <div class="spinner-layer spinner-blue-only">
+                            <div class="circle-clipper left"><div class="circle"></div></div>
+                            <div class="gap-patch"><div class="circle"></div></div>
+                            <div class="circle-clipper right"><div class="circle"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <form id="profileForm" style="display:none;">
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">person</i>
+                            <input type="text" id="name" name="name">
+                            <label for="name">Nombre</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">person_outline</i>
+                            <input type="text" id="lastName" name="lastName">
+                            <label for="lastName">Apellido</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">email</i>
+                            <input type="email" id="email" name="email" disabled>
+                            <label for="email">Email</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">phone</i>
+                            <input type="text" id="phoneNumer" name="phoneNumer" pattern="\d{9}" maxlength="9" minlength="9" oninput="this.value=this.value.replace(/\D/g,'').slice(0,9);">
+                            <label for="phoneNumer">Teléfono (9 dígitos)</label>
+                            <span class="helper-text" data-error="Debe tener exactamente 9 dígitos numéricos">Ingrese 9 dígitos</span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">cake</i>
+                            <input type="date" id="birthdate" name="birthdate">
+                            <label for="birthdate" class="active">Fecha de Nacimiento</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">badge</i>
+                            <input type="text" id="edad" disabled>
+                            <label for="edad" class="active">Edad</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">image</i>
+                            <input type="text" id="url_profile" name="url_profile">
+                            <label for="url_profile">URL Foto de Perfil</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <i class="material-icons prefix">home</i>
+                            <input type="text" id="adress" name="adress">
+                            <label for="adress">Dirección</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <i class="material-icons prefix">security</i>
+                            <input type="text" id="roles" disabled>
+                            <label for="roles" class="active">Roles</label>
+                        </div>
+                    </div>
+                    <div class="center-align">
+                        <button class="btn waves-effect waves-light blue darken-2" type="submit">
+                            Guardar Cambios <i class="material-icons right">save</i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(async () => {
+    const token = sessionStorage.getItem('token');
+    if (!token) return window.location.href = '/signIn';
+
+    try {
+        checkTokenExpiry(token);
+    } catch(e) {
+        sessionStorage.removeItem('token');
+        return window.location.href = '/signIn';
+    }
+
+    try {
+        const res = await fetch('/api/users/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('token');
+            return window.location.href = '/signIn';
+        }
+        const user = await res.json();
+
+        document.getElementById('name').value = user.name || '';
+        document.getElementById('lastName').value = user.lastName || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('phoneNumer').value = user.phoneNumer || '';
+        document.getElementById('url_profile').value = user.url_profile || '';
+        document.getElementById('adress').value = user.adress || '';
+        document.getElementById('roles').value = (user.roles || []).join(', ');
+
+        if (user.birthdate) {
+            const bd = new Date(user.birthdate);
+            document.getElementById('birthdate').value = bd.toISOString().split('T')[0];
+            document.getElementById('edad').value = calcularEdad(bd) + ' años';
+        }
+
+        // Activar labels de Materialize
+        M.updateTextFields();
+
+        document.getElementById('profile-loading').style.display = 'none';
+        document.getElementById('profileForm').style.display = 'block';
+    } catch (err) {
+        document.getElementById('profile-loading').style.display = 'none';
+        document.getElementById('profile-error').textContent = err.message;
+        document.getElementById('profile-error').style.display = 'block';
+    }
+})();
+
+function calcularEdad(birthdate) {
+    const today = new Date();
+    let age = today.getFullYear() - birthdate.getFullYear();
+    const m = today.getMonth() - birthdate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) age--;
+    return age;
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = sessionStorage.getItem('token');
+    const errorDiv = document.getElementById('profile-error');
+    const successDiv = document.getElementById('profile-success');
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    const body = {
+        name: document.getElementById('name').value,
+        lastName: document.getElementById('lastName').value,
+        phoneNumer: document.getElementById('phoneNumer').value,
+        birthdate: document.getElementById('birthdate').value,
+        url_profile: document.getElementById('url_profile').value,
+        adress: document.getElementById('adress').value
+    };
+
+    try {
+        const res = await fetch('/api/users/me', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(body)
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('token');
+            return window.location.href = '/signIn';
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error al actualizar');
+
+        if (data.birthdate) {
+            document.getElementById('edad').value = calcularEdad(new Date(data.birthdate)) + ' años';
+        }
+
+        successDiv.textContent = 'Perfil actualizado correctamente';
+        successDiv.style.display = 'block';
+        setTimeout(() => { successDiv.style.display = 'none'; }, 3000);
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
+});
+</script>
+
+<%- include('partials/footer') %>
