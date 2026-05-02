@@ -19,7 +19,7 @@ export default async function seedUsers() {
         password: hashed,
         name: 'Admin',
         lastName: 'Principal',
-        phoneNumer: '999999999',
+        phoneNumer: '9998888777',
         birthdate: new Date('1990-01-01'),
         roles: [adminRole._id, userRole._id]
     });
