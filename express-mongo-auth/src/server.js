@@ -45,6 +45,7 @@ app.use((err, req, res, next) => {
     res.status(err.status || 500).json({ message: err.message || 'Error interno del servidor' });
 });
 
+// Puerto de escucha
 const PORT = process.env.PORT || 3000;
 
 
