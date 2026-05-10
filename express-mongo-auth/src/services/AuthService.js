@@ -65,7 +65,7 @@ class AuthService {
             roles: user.roles.map(r => r.name) }, 
             process.env.JWT_SECRET, 
             { 
-                expiresIn: process.env.JWT_EXPIRES_IN || '1h' 
+                expiresIn: process.env.JWT_EXPIRES_IN || '1h' // El token expirará en 1 hora por defecto, pero se puede configurar con la variable de entorno JWT_EXPIRES_IN (ej: '2h', '30m', etc.)
             }
         );
         // console.log("Verify:", jwt.verify(token, process.env.JWT_SECRET));
