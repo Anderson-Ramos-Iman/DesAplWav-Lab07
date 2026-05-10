@@ -48,7 +48,7 @@ app.use((err, req, res, next) => {
 // Puerto de escucha
 const PORT = process.env.PORT || 3000;
 
-
+// Conexión a MongoDB y arranque del servidor
 mongoose.connect(process.env.MONGODB_URI, { autoIndex: true })
     .then( async () => {
         console.log('Mongo connected');
